@@ -119,6 +119,16 @@ echo $OPENAI_API_KEY | codex login --with-api-key
 | `OPENAI_API_KEY` (in .env) | `.env` file | LiteLLM → Third-party | Authenticates proxy to your employer's OpenAI endpoint |
 | `ANTHROPIC_API_KEY` | `.env` file | LiteLLM → Third-party | Authenticates proxy to your employer's Anthropic endpoint |
 
+## Privacy & Telemetry
+
+**All telemetry is disabled by default.** The auto-generated config includes:
+
+- ✅ Telemetry/analytics: **DISABLED** (`exporter = "none"`)
+- ✅ User prompt logging: **DISABLED** (`log_user_prompt = false`)
+- ✅ Code stays local (only API requests go through proxy)
+
+Your configuration automatically prioritizes privacy. See [README.md](README.md#privacy--telemetry-settings) for details.
+
 ## Still Having Issues?
 
 1. Check logs: `docker-compose logs -f litellm`

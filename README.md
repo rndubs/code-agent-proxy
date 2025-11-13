@@ -294,6 +294,34 @@ codex --model claude-3-5-sonnet "explain this code"
 
 For the VS Code extension, you can select the model in the extension UI.
 
+### Privacy & Telemetry Settings
+
+**All telemetry is disabled by default** in the auto-generated `~/.codex/config.toml`.
+
+The configuration includes:
+
+```toml
+[otel]
+# Disable all telemetry/analytics collection
+exporter = "none"
+
+# Never log user prompts to telemetry
+log_user_prompt = false
+```
+
+**What this means:**
+- ✅ No analytics or telemetry data sent to OpenAI
+- ✅ User prompts never logged to telemetry systems
+- ✅ All code stays local (only API requests go through LiteLLM proxy)
+- ✅ Privacy-first defaults
+
+**If you want to enable telemetry** (e.g., for enterprise monitoring):
+1. Edit `~/.codex/config.toml` directly
+2. Change `exporter = "none"` to `exporter = "otlp-http"` or `exporter = "otlp-grpc"`
+3. Add endpoint configuration (see [Codex docs](https://github.com/openai/codex/blob/main/docs/config.md))
+
+**Note**: Even with telemetry enabled, `log_user_prompt = false` prevents your prompts from being logged.
+
 ## Using with GitHub Copilot
 
 If you're using GitHub Copilot or similar tools, you can configure them to use the proxy:
