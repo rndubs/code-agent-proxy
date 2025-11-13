@@ -121,32 +121,74 @@ curl http://localhost:4000/v1/chat/completions \
 
 ## Using with VS Code Devcontainer
 
+The devcontainer comes pre-configured with Node.js and OpenAI Codex CLI.
+
 ### 1. Open in Container
 
 1. Open the project in VS Code
 2. Press `F1` and select "Dev Containers: Reopen in Container"
-3. VS Code will build and start the devcontainer
+3. Wait for the container to build and Codex to install automatically
 
-### 2. Configure OpenAI Codex
+### 2. Understanding the Two-Token System
 
-The devcontainer automatically configures the environment variables:
+**IMPORTANT**: This setup uses TWO different authentication tokens:
 
-```json
-{
-  "OPENAI_BASE_URL": "http://litellm:4000",
-  "OPENAI_API_KEY": "${localEnv:LITELLM_MASTER_KEY}"
-}
+```
+┌─────────┐   LITELLM_MASTER_KEY    ┌─────────┐   EMPLOYER_TOKEN   ┌──────────────┐
+│  Codex  │ ─────────────────────> │ LiteLLM │ ─────────────────> │ Third-party  │
+│   CLI   │                         │  Proxy  │                    │   LLM APIs   │
+└─────────┘                         └─────────┘                    └──────────────┘
 ```
 
-### 3. Install OpenAI Codex CLI (Optional)
+1. **LITELLM_MASTER_KEY**:
+   - Authenticates Codex to your local LiteLLM proxy
+   - You generate this yourself (any secure random string)
+   - This is what you use when logging into Codex
 
-If using the OpenAI Codex CLI tool:
+2. **EMPLOYER_TOKEN** (OPENAI_API_KEY / ANTHROPIC_API_KEY):
+   - Your employer's token for third-party LLM endpoints
+   - Used by LiteLLM to authenticate to the third-party APIs
+   - Goes in the `.env` file
+   - Codex never sees this token directly
+
+### 3. Authenticate Codex
+
+Inside the devcontainer, authenticate Codex using the LITELLM_MASTER_KEY:
 
 ```bash
-npm install -g @openai/codex
+# The OPENAI_API_KEY env var is already set to LITELLM_MASTER_KEY
+echo $OPENAI_API_KEY | codex login --with-api-key
+```
 
-# The environment is already configured to use the proxy
-codex "write a hello world function"
+**Note**: The `OPENAI_API_KEY` environment variable in the devcontainer is set to `LITELLM_MASTER_KEY`, NOT your employer's token. This tells Codex to authenticate to the local proxy.
+
+### 4. Use Codex
+
+Once authenticated, Codex automatically routes through the LiteLLM proxy:
+
+```bash
+# Write code
+codex "write a hello world function in Python"
+
+# Debug code
+codex "explain this error: NameError: name 'foo' is not defined"
+
+# Refactor code
+codex "refactor this function to use async/await"
+```
+
+### 5. Verify the Setup
+
+Check that requests are going through the proxy:
+
+```bash
+# In another terminal, watch the LiteLLM logs
+docker-compose logs -f litellm
+
+# Then run a Codex command
+codex "say hello"
+
+# You should see the request appear in the LiteLLM logs
 ```
 
 ## Using with GitHub Copilot
@@ -274,6 +316,50 @@ Verify environment variables are loaded:
 ```bash
 docker-compose exec litellm env | grep -E '(OPENAI|ANTHROPIC|LITELLM)'
 ```
+
+### Codex Authentication Issues
+
+If Codex authentication fails or you get "unauthorized" errors:
+
+1. **Verify you're using the correct token for Codex login**:
+   ```bash
+   # WRONG: Don't use your employer token
+   # echo $EMPLOYER_TOKEN | codex login --with-api-key
+
+   # CORRECT: Use the LITELLM_MASTER_KEY
+   echo $OPENAI_API_KEY | codex login --with-api-key
+   ```
+
+2. **Check that OPENAI_BASE_URL is set correctly**:
+   ```bash
+   echo $OPENAI_BASE_URL
+   # Should output: http://litellm:4000
+   ```
+
+3. **Verify LiteLLM has your employer tokens in .env**:
+   ```bash
+   # On your host machine (not in devcontainer)
+   grep OPENAI_API_KEY .env
+   grep ANTHROPIC_API_KEY .env
+   ```
+
+4. **Test the proxy directly**:
+   ```bash
+   curl http://litellm:4000/v1/chat/completions \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $OPENAI_API_KEY" \
+     -d '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "test"}]}'
+   ```
+
+5. **Check Codex authentication status**:
+   ```bash
+   # View stored credentials
+   cat ~/.codex/auth.json
+
+   # Re-authenticate if needed
+   rm ~/.codex/auth.json
+   echo $OPENAI_API_KEY | codex login --with-api-key
+   ```
 
 ## Security Notes
 

@@ -67,7 +67,7 @@
   },
 
   // Run commands after container creation
-  "postCreateCommand": "echo 'LiteLLM Proxy is ready at http://localhost:4000'",
+  "postCreateCommand": "bash .devcontainer/setup-codex.sh",
 
   // Keep container running
   "overrideCommand": true,
@@ -89,6 +89,11 @@
     },
     "ghcr.io/devcontainers/features/git:1": {
       "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "nodeGypDependencies": true,
+      "installYarnUsingApt": true
     },
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11"
