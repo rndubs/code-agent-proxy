@@ -46,8 +46,15 @@
 
   // Environment variables for the devcontainer
   "remoteEnv": {
+    // OpenAI Codex configuration
     "OPENAI_BASE_URL": "http://litellm:4000",
     "OPENAI_API_KEY": "${localEnv:LITELLM_MASTER_KEY}",
+
+    // Claude Code configuration
+    "ANTHROPIC_BASE_URL": "http://litellm:4000",
+    "ANTHROPIC_API_KEY": "${localEnv:LITELLM_MASTER_KEY}",
+
+    // General LiteLLM proxy URL
     "LITELLM_PROXY_URL": "http://litellm:4000"
   },
 
@@ -67,7 +74,7 @@
   },
 
   // Run commands after container creation
-  "postCreateCommand": "bash .devcontainer/setup-codex.sh",
+  "postCreateCommand": "bash .devcontainer/setup-codex.sh && bash .devcontainer/setup-claude-code.sh",
 
   // Keep container running
   "overrideCommand": true,
