@@ -1,6 +1,6 @@
-# LiteLLM Proxy for OpenAI Codex
+# LiteLLM Proxy for AI Coding Tools
 
-A containerized LiteLLM proxy layer that enables OpenAI Codex (and other AI coding tools) to work with third-party hosted LLM providers. This allows you to use both OpenAI and Anthropic models through a unified local proxy endpoint.
+A containerized LiteLLM proxy layer that enables AI coding tools (OpenAI Codex, Claude Code, and others) to work with third-party hosted LLM providers. This allows you to use both OpenAI and Anthropic models through a unified local proxy endpoint.
 
 ## Overview
 
@@ -9,16 +9,16 @@ This project sets up a LiteLLM proxy server that:
 - Provides a local OpenAI-compatible API endpoint
 - Routes requests to third-party hosted LLM providers (OpenAI, Anthropic, etc.)
 - Integrates with VS Code devcontainers for seamless development
-- Supports OpenAI Codex and similar AI coding assistants
+- Supports OpenAI Codex, Claude Code, and similar AI coding assistants
 
 ## Architecture
 
 ```
-┌─────────────────┐
-│   VS Code       │
-│   (Codex/AI)    │
-└────────┬────────┘
-         │ OPENAI_BASE_URL=http://localhost:4000
+┌─────────────────────────────────────┐
+│   VS Code (Codex/Claude Code/AI)    │
+└────────┬────────────────────────────┘
+         │ OPENAI_BASE_URL / ANTHROPIC_BASE_URL
+         │ = http://localhost:4000
          ▼
 ┌─────────────────────────────────────┐
 │  LiteLLM Proxy (Container)          │
@@ -121,7 +121,7 @@ curl http://localhost:4000/v1/chat/completions \
 
 ## Using with VS Code Devcontainer
 
-The devcontainer comes pre-configured with Node.js and OpenAI Codex CLI.
+The devcontainer comes pre-configured with Node.js, OpenAI Codex CLI, and Claude Code CLI.
 
 ### 1. Open in Container
 
@@ -134,22 +134,24 @@ The devcontainer comes pre-configured with Node.js and OpenAI Codex CLI.
 **IMPORTANT**: This setup uses TWO different authentication tokens:
 
 ```
-┌─────────┐   LITELLM_MASTER_KEY    ┌─────────┐   EMPLOYER_TOKEN   ┌──────────────┐
-│  Codex  │ ─────────────────────> │ LiteLLM │ ─────────────────> │ Third-party  │
-│   CLI   │                         │  Proxy  │                    │   LLM APIs   │
-└─────────┘                         └─────────┘                    └──────────────┘
+┌───────────┐   LITELLM_MASTER_KEY    ┌─────────┐   EMPLOYER_TOKEN   ┌──────────────┐
+│  AI Tool  │ ─────────────────────> │ LiteLLM │ ─────────────────> │ Third-party  │
+│ (Codex or │                         │  Proxy  │                    │   LLM APIs   │
+│Claude Code)                         └─────────┘                    └──────────────┘
+└───────────┘
 ```
 
 1. **LITELLM_MASTER_KEY**:
-   - Authenticates Codex to your local LiteLLM proxy
+   - Authenticates AI tools to your local LiteLLM proxy
    - You generate this yourself (any secure random string)
-   - This is what you use when logging into Codex
+   - **For Codex**: Use when logging in with `codex login --with-api-key`
+   - **For Claude Code**: Automatically used via `ANTHROPIC_API_KEY` env var (no login command needed)
 
-2. **EMPLOYER_TOKEN** (OPENAI_API_KEY / ANTHROPIC_API_KEY):
-   - Your employer's token for third-party LLM endpoints
+2. **EMPLOYER_TOKEN** (OPENAI_API_KEY / ANTHROPIC_API_KEY in `.env`):
+   - Your employer's tokens for third-party LLM endpoints
    - Used by LiteLLM to authenticate to the third-party APIs
    - Goes in the `.env` file
-   - Codex never sees this token directly
+   - AI tools never see these tokens directly
 
 ### 3. Authenticate Codex
 
@@ -162,7 +164,31 @@ echo $OPENAI_API_KEY | codex login --with-api-key
 
 **Note**: The `OPENAI_API_KEY` environment variable in the devcontainer is set to `LITELLM_MASTER_KEY`, NOT your employer's token. This tells Codex to authenticate to the local proxy.
 
-### 4. Use Codex
+### 4. Use Claude Code
+
+**Claude Code requires NO separate login!** It automatically uses environment variables for authentication.
+
+Inside the devcontainer:
+
+```bash
+# Check that Claude Code is installed
+claude-code --version
+
+# Start using Claude Code immediately - no login needed!
+claude-code
+
+# Or use it from the command line
+claude-code --help
+```
+
+**How it works**:
+- `ANTHROPIC_BASE_URL` is set to `http://litellm:4000`
+- `ANTHROPIC_API_KEY` is set to your `LITELLM_MASTER_KEY`
+- Claude Code detects these and skips the web login flow automatically
+
+For a detailed Claude Code guide, see [CLAUDE-CODE-QUICKSTART.md](CLAUDE-CODE-QUICKSTART.md).
+
+### 5. Use Codex
 
 Once authenticated, Codex automatically routes through the LiteLLM proxy:
 
@@ -177,7 +203,7 @@ codex "explain this error: NameError: name 'foo' is not defined"
 codex "refactor this function to use async/await"
 ```
 
-### 5. Verify the Setup
+### 6. Verify the Setup
 
 Check that requests are going through the proxy:
 
@@ -191,9 +217,16 @@ codex "say hello"
 # You should see the request appear in the LiteLLM logs
 ```
 
-## Codex CLI vs VS Code Extension
+## Using Multiple AI Coding Tools
 
-This setup supports **both** the Codex CLI and the official VS Code extension. You only need to configure `.env` once - everything else is automatic.
+This setup supports **multiple AI coding tools simultaneously**:
+- **OpenAI Codex** (CLI and VS Code extension)
+- **Claude Code** (CLI)
+- Any other tool that supports custom API endpoints
+
+You only need to configure `.env` once - everything else is automatic.
+
+## Codex CLI vs VS Code Extension
 
 ### Single Configuration Workflow
 
@@ -321,6 +354,16 @@ log_user_prompt = false
 3. Add endpoint configuration (see [Codex docs](https://github.com/openai/codex/blob/main/docs/config.md))
 
 **Note**: Even with telemetry enabled, `log_user_prompt = false` prevents your prompts from being logged.
+
+## Quick Reference: Authentication by Tool
+
+| Tool | Auth Method | Base URL Env Var | API Key Env Var | Login Command |
+|------|-------------|------------------|-----------------|---------------|
+| **Codex CLI** | API key login | `OPENAI_BASE_URL` | `OPENAI_API_KEY` | `echo $OPENAI_API_KEY \| codex login --with-api-key` |
+| **Codex VS Code** | Config file | `OPENAI_BASE_URL` | `OPENAI_API_KEY` | Uses `~/.codex/config.toml` (auto-generated) |
+| **Claude Code** | Environment vars | `ANTHROPIC_BASE_URL` | `ANTHROPIC_API_KEY` | None needed - automatic! |
+
+All tools use `LITELLM_MASTER_KEY` for authentication to the proxy and point to `http://litellm:4000`.
 
 ## Using with GitHub Copilot
 
@@ -538,10 +581,16 @@ docker-compose up -d litellm
 
 ## Resources
 
+### Documentation
 - [LiteLLM Documentation](https://docs.litellm.ai/)
 - [LiteLLM OpenAI Codex Tutorial](https://docs.litellm.ai/docs/tutorials/openai_codex)
+- [LiteLLM Claude Code Tutorial](https://docs.litellm.ai/docs/tutorials/claude_responses_api)
 - [LiteLLM Proxy Server](https://docs.litellm.ai/docs/proxy/docker_quick_start)
 - [VS Code Devcontainers](https://code.visualstudio.com/docs/devcontainers/containers)
+
+### Quick Start Guides
+- [QUICKSTART.md](QUICKSTART.md) - OpenAI Codex setup guide
+- [CLAUDE-CODE-QUICKSTART.md](CLAUDE-CODE-QUICKSTART.md) - Claude Code setup guide
 
 ## License
 
