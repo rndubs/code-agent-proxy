@@ -1,6 +1,8 @@
 # Quick Start Guide - LiteLLM Proxy for Codex
 
-This guide gets you up and running with OpenAI Codex using third-party LLM providers in under 5 minutes.
+This guide gets you up and running with OpenAI Codex (CLI and VS Code extension) using third-party LLM providers in under 5 minutes.
+
+**Supports**: Codex CLI + VS Code Extension (both configured automatically from single `.env` file)
 
 ## Token Flow (Important!)
 
@@ -67,13 +69,22 @@ echo $OPENAI_API_KEY | codex login --with-api-key
 
 ### 5. Use Codex! (30 seconds)
 
+**Option A: CLI**
 ```bash
-# Try it out
+# Try it out in the terminal
 codex "write a hello world function in Python"
 
 # Watch the proxy logs (in another terminal on host)
 docker-compose logs -f litellm
 ```
+
+**Option B: VS Code Extension**
+1. Install "Codex – OpenAI's coding agent" extension from marketplace (ID: `openai.chatgpt`)
+2. Click the Codex icon in sidebar
+3. Extension automatically uses `~/.codex/config.toml` (already configured!)
+4. Start chatting or editing code - it just works!
+
+**Both CLI and extension** use the same configuration (auto-generated from `.env`)
 
 ## Common Mistakes
 

@@ -191,6 +191,109 @@ codex "say hello"
 # You should see the request appear in the LiteLLM logs
 ```
 
+## Codex CLI vs VS Code Extension
+
+This setup supports **both** the Codex CLI and the official VS Code extension. You only need to configure `.env` once - everything else is automatic.
+
+### Single Configuration Workflow
+
+```
+.env (you edit this)
+  ↓
+setup-codex.sh (auto-generates config)
+  ↓
+~/.codex/config.toml (automatically created)
+  ↓
+Both CLI & VS Code Extension work!
+```
+
+### Using the Codex CLI
+
+The CLI is pre-installed in the devcontainer and ready to use:
+
+```bash
+# Authenticate once (uses LITELLM_MASTER_KEY)
+echo $OPENAI_API_KEY | codex login --with-api-key
+
+# Use Codex from terminal
+codex "write a function to parse JSON"
+codex "explain this error: TypeError"
+codex "refactor this code to be more efficient"
+
+# Check status
+codex status
+
+# View configuration
+cat ~/.codex/config.toml
+```
+
+**Configuration**: Automatically configured via `.devcontainer/setup-codex.sh` on container creation.
+
+### Using the VS Code Extension
+
+The official OpenAI Codex extension works seamlessly with this setup:
+
+#### Installation
+
+1. Open the Extensions view in VS Code (`Ctrl+Shift+X`)
+2. Search for "Codex – OpenAI's coding agent" (ID: `openai.chatgpt`)
+3. Click Install
+
+#### Authentication
+
+The extension uses the same configuration as the CLI:
+
+- **Automatic**: The extension reads `~/.codex/config.toml` (already created by setup script)
+- **No extra configuration needed**: Environment variables and proxy settings are already configured
+
+When you first open the extension, it will use the API key authentication method automatically since `~/.codex/config.toml` is configured.
+
+#### Usage
+
+1. Click the Codex icon in the VS Code sidebar
+2. The extension is already authenticated via the config file
+3. Start chatting, editing code, or running commands
+4. All requests automatically route through the LiteLLM proxy
+
+#### Verification
+
+```bash
+# Verify the extension can see the config
+cat ~/.codex/config.toml
+
+# Should show:
+# model_provider = "openai"
+# base_url = "http://litellm:4000/v1"
+# env_key = "OPENAI_API_KEY"
+```
+
+### Configuration Reference
+
+Both CLI and VS Code extension share the same configuration:
+
+| File | Purpose | Who edits it |
+|------|---------|--------------|
+| `.env` | **Single source of truth** - all tokens and endpoints | **You edit this** |
+| `~/.codex/config.toml` | Codex configuration file | **Auto-generated** (don't edit) |
+| `.devcontainer/setup-codex.sh` | Creates config.toml from .env | **Auto-runs** on container start |
+
+**Important**: You should only need to edit `.env`. Everything else is automated.
+
+### Switching Models
+
+To use different models with Codex:
+
+```bash
+# CLI: Specify model inline
+codex --model gpt-4-turbo "write a hello world function"
+codex --model claude-3-5-sonnet "explain this code"
+
+# Or set default in ~/.codex/config.toml (auto-generated, can edit if needed)
+# model = "gpt-4"  # Change this to your preferred default
+```
+
+For the VS Code extension, you can select the model in the extension UI.
+
 ## Using with GitHub Copilot
 
 If you're using GitHub Copilot or similar tools, you can configure them to use the proxy:
