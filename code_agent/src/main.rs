@@ -1,4 +1,5 @@
 mod tools;
+mod agent;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -91,11 +92,25 @@ enum Commands {
         #[arg(short, long)]
         json: Option<String>,
     },
+    /// Run the coding agent with LLM integration
+    Agent {
+        /// Task prompt for the agent (if not provided, starts interactive mode)
+        prompt: Option<String>,
+        /// Enable verbose output showing tool calls
+        #[arg(short, long)]
+        verbose: bool,
+        /// System prompt to guide agent behavior
+        #[arg(short, long)]
+        system: Option<String>,
+    },
     /// List all available tools
     List,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
+    dotenv::dotenv().ok(); // Load .env file if present
+
     let cli = Cli::parse();
 
     let result = match cli.command {
@@ -201,6 +216,13 @@ fn main() -> Result<()> {
             };
             tool.execute(params)?
         }
+        Commands::Agent {
+            prompt,
+            verbose,
+            system,
+        } => {
+            return run_agent(prompt, verbose, system).await;
+        }
         Commands::List => {
             println!("{}", "Available Tools:".bright_cyan().bold());
             println!();
@@ -224,6 +246,100 @@ fn main() -> Result<()> {
             result.error.unwrap_or_default()
         );
         std::process::exit(1);
+    }
+
+    Ok(())
+}
+
+async fn run_agent(
+    prompt: Option<String>,
+    verbose: bool,
+    system: Option<String>,
+) -> Result<()> {
+    let mut agent = agent::AgentLoop::new(verbose)?;
+
+    // Set system prompt
+    let default_system = "You are a helpful coding assistant with access to file operations, \
+        search tools, and bash commands. Use these tools to help the user accomplish their tasks. \
+        Be concise and efficient in your tool usage.".to_string();
+
+    agent.set_system_prompt(system.unwrap_or(default_system));
+
+    if let Some(task) = prompt {
+        // Single-shot mode
+        let response = agent.run(task).await?;
+
+        if !verbose {
+            println!("{}", response);
+        }
+    } else {
+        // Interactive REPL mode
+        run_interactive(agent).await?;
+    }
+
+    Ok(())
+}
+
+async fn run_interactive(mut agent: agent::AgentLoop) -> Result<()> {
+    use rustyline::error::ReadlineError;
+    use rustyline::DefaultEditor;
+
+    println!("{}", "Code Agent - Interactive Mode".bright_cyan().bold());
+    println!("{}", "Type your requests or 'exit' to quit.".dimmed());
+    println!("{}", "Type 'clear' to clear conversation history.".dimmed());
+    println!();
+
+    let mut rl = DefaultEditor::new()?;
+
+    loop {
+        match rl.readline(&format!("{} ", "You:".bright_cyan().bold())) {
+            Ok(line) => {
+                let line = line.trim();
+
+                if line.is_empty() {
+                    continue;
+                }
+
+                rl.add_history_entry(line)?;
+
+                match line {
+                    "exit" | "quit" => {
+                        println!("Goodbye!");
+                        break;
+                    }
+                    "clear" => {
+                        agent.clear_history();
+                        println!("{}", "Conversation history cleared.".dimmed());
+                        continue;
+                    }
+                    _ => {
+                        match agent.run(line.to_string()).await {
+                            Ok(_response) => {
+                                // Response already printed by agent loop if verbose
+                                // or printed as final message
+                                println!();
+                            }
+                            Err(e) => {
+                                eprintln!("{} {}", "Error:".bright_red().bold(), e);
+                                println!();
+                            }
+                        }
+                    }
+                }
+            }
+            Err(ReadlineError::Interrupted) => {
+                println!("Interrupted");
+                break;
+            }
+            Err(ReadlineError::Eof) => {
+                println!("EOF");
+                break;
+            }
+            Err(err) => {
+                eprintln!("Error: {:?}", err);
+                break;
+            }
+        }
     }
 
     Ok(())
