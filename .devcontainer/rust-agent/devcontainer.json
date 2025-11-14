@@ -1,0 +1,81 @@
+{
+  "name": "Rust Code Agent Development",
+  "dockerComposeFile": "../../docker-compose.yml",
+  "service": "code-agent",
+  "workspaceFolder": "/workspace",
+
+  // Configure VSCode settings
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Rust settings
+        "rust-analyzer.checkOnSave.command": "clippy",
+        "rust-analyzer.cargo.features": "all",
+        "[rust]": {
+          "editor.defaultFormatter": "rust-lang.rust-analyzer",
+          "editor.formatOnSave": true
+        },
+
+        // General editor settings
+        "editor.formatOnSave": true,
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true
+      },
+
+      "extensions": [
+        // Rust development
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "serayuzgur.crates",
+
+        // TOML support
+        "tamasfe.even-better-toml",
+
+        // Docker
+        "ms-azuretools.vscode-docker",
+
+        // Git
+        "eamodio.gitlens"
+      ]
+    }
+  },
+
+  // Environment variables for the devcontainer
+  "remoteEnv": {
+    // LiteLLM proxy configuration for code agent
+    "LITELLM_BASE_URL": "http://litellm:4000",
+    "ANTHROPIC_BASE_URL": "http://litellm:4000",
+    "ANTHROPIC_API_KEY": "${localEnv:LITELLM_MASTER_KEY}"
+  },
+
+  // Forward ports to access services
+  "forwardPorts": [4000],
+  "portsAttributes": {
+    "4000": {
+      "label": "LiteLLM Proxy",
+      "onAutoForward": "notify"
+    }
+  },
+
+  // Run commands after container creation
+  "postCreateCommand": "bash .devcontainer/rust-agent/setup.sh",
+
+  // Keep container running
+  "overrideCommand": false,
+
+  // Use root user for development
+  "remoteUser": "root",
+
+  // Features to install
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    }
+  }
+}

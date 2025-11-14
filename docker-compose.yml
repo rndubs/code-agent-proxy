@@ -81,10 +81,38 @@ services:
       timeout: 5s
       retries: 5
 
+  # Rust Code Agent Development Environment
+  code-agent:
+    build:
+      context: .
+      dockerfile: .devcontainer/rust-agent/Dockerfile
+    container_name: code-agent-dev
+    volumes:
+      - .:/workspace:cached
+      - cargo-cache:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+    working_dir: /workspace/code_agent
+    environment:
+      # LiteLLM proxy URL for the agent
+      - LITELLM_BASE_URL=http://litellm:4000
+      - ANTHROPIC_BASE_URL=http://litellm:4000
+      - ANTHROPIC_API_KEY=${LITELLM_MASTER_KEY}
+    networks:
+      - litellm-network
+    depends_on:
+      - litellm
+    command: sleep infinity
+    stdin_open: true
+    tty: true
+
 volumes:
   postgres-data:
     driver: local
   redis-data:
+    driver: local
+  cargo-cache:
+    driver: local
+  cargo-git:
     driver: local
 
 networks:
