@@ -122,8 +122,8 @@ impl AgentLoop {
 
         let params = ToolParams { data: args };
 
-        // Execute the tool
-        let result = self.registry.execute_tool(tool_name, params)?;
+        // Execute the tool (now async and supports discovery)
+        let result = self.registry.execute_tool(tool_name, params).await?;
 
         // Format result message
         let result_content = if result.success {

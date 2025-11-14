@@ -1,0 +1,19 @@
+{
+  "name": "word_count",
+  "description": "Counts words, lines, and characters in a file or text string",
+  "implementation_type": "script",
+  "script_path": "word_count.sh",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Optional path to file to analyze"
+      },
+      "text": {
+        "type": "string",
+        "description": "Optional text string to analyze"
+      }
+    }
+  }
+}

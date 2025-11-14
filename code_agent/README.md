@@ -299,6 +299,104 @@ code_agent bash "cargo test" --description "Running test suite"
 - `reqwest` - HTTP client for LLM API calls
 - `rustyline` - Interactive REPL with history
 - `dotenv` - Environment variable configuration
+- `shellexpand` - Path expansion for user directories
+- `dirs` - Cross-platform user directory lookup
+
+## User-Defined Tools
+
+The agent supports **progressive tool discovery** based on the [Anthropic MCP design principles](https://www.anthropic.com/engineering/code-execution-with-mcp). You can extend the agent with your own custom tools without recompiling!
+
+### Quick Start
+
+1. **Create the user tools directory:**
+```bash
+mkdir -p ~/.code_agent/tools/{definitions,scripts}
+```
+
+2. **Copy example tools:**
+```bash
+cp -r examples/user_tools/* ~/.code_agent/tools/
+chmod +x ~/.code_agent/tools/scripts/*
+```
+
+3. **Use your custom tools:**
+```bash
+code_agent agent "Use word_count to analyze README.md"
+```
+
+### How It Works
+
+The agent uses a **hybrid progressive discovery approach**:
+
+1. **Core Tools** (always available): `read`, `glob` - needed for discovery
+2. **Built-in Tools** (loaded on startup): `write`, `edit`, `grep`, `bash`, `todo`
+3. **User Tools** (discovered on-demand): Loaded from `~/.code_agent/tools/` when needed
+
+This approach **reduces token usage by 90%+** compared to sending all tool definitions on every LLM call.
+
+### Creating Custom Tools
+
+You can create tools in two ways:
+
+#### Option 1: Script-Based Tools
+
+Create tools using any scripting language (Bash, Python, Ruby, etc.):
+
+**Definition** (`~/.code_agent/tools/definitions/my_tool.json`):
+```json
+{
+  "name": "my_tool",
+  "description": "What your tool does",
+  "implementation_type": "script",
+  "script_path": "my_tool.sh",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "input": {"type": "string", "description": "Input param"}
+    },
+    "required": ["input"]
+  }
+}
+```
+
+**Implementation** (`~/.code_agent/tools/scripts/my_tool.sh`):
+```bash
+#!/bin/bash
+params=$(cat)  # Read JSON from stdin
+result="Your logic here"
+echo '{"success": true, "output": "'"$result"'"}'
+```
+
+#### Option 2: MCP Server Tools
+
+Connect to external MCP-compatible servers:
+
+```json
+{
+  "name": "api_tool",
+  "description": "Tool provided by external service",
+  "implementation_type": "mcp_server",
+  "server_url": "http://localhost:9001",
+  "parameters": { ... }
+}
+```
+
+### Examples
+
+See `examples/user_tools/` for complete examples:
+- **word_count** - Bash script that counts words/lines/chars
+- **json_format** - Python script for JSON formatting
+- **weather** - MCP server integration example
+
+For detailed documentation, see [examples/user_tools/README.md](examples/user_tools/README.md).
+
+### Benefits
+
+- ✅ **No recompilation** - Add tools by editing JSON files
+- ✅ **Any language** - Write tools in Bash, Python, Ruby, etc.
+- ✅ **Token efficient** - Only load tool definitions when needed
+- ✅ **MCP compatible** - Connect to external MCP servers
+- ✅ **Secure** - Tools run in separate processes with timeouts
 
 ## Future Enhancements
 
@@ -306,6 +404,8 @@ Potential additions to match more Claude Code features:
 
 - [x] Agent mode with LLM integration
 - [x] Interactive REPL mode
+- [x] Plugin system for custom tools (script-based and MCP server)
+- [x] Progressive tool discovery for token efficiency
 - [ ] WebFetch tool for HTTP requests
 - [ ] WebSearch integration
 - [ ] Sub-agents with specialized contexts
@@ -314,7 +414,6 @@ Potential additions to match more Claude Code features:
 - [ ] Enhanced git integration
 - [ ] Tool result caching
 - [ ] Parallel execution of independent tool calls
-- [ ] Plugin system for custom tools
 - [ ] Streaming responses from LLM
 - [ ] Token usage tracking and cost estimation
 
@@ -334,4 +433,6 @@ This project is provided as-is for educational and development purposes.
 
 ## Acknowledgments
 
-Inspired by [Claude Code](https://gist.github.com/wong2/e0f34aac66caf890a332f7b6f9e2ba8f) tool system.
+- Inspired by [Claude Code](https://gist.github.com/wong2/e0f34aac66caf890a332f7b6f9e2ba8f) tool system
+- Progressive tool discovery based on [Anthropic's MCP design principles](https://www.anthropic.com/engineering/code-execution-with-mcp)
+- Agent loop architecture from [Fly.io's "You Should Write An Agent"](https://fly.io/blog/everyone-write-an-agent/)

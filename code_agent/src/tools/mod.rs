@@ -2,6 +2,8 @@ pub mod file_ops;
 pub mod search;
 pub mod bash;
 pub mod todo;
+pub mod definition;
+pub mod executors;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};

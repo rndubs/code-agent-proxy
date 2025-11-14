@@ -1,0 +1,22 @@
+{
+  "name": "get_weather",
+  "description": "Fetches current weather information for a given city (requires MCP weather server running)",
+  "implementation_type": "mcp_server",
+  "server_url": "http://localhost:9001",
+  "timeout_ms": 5000,
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "city": {
+        "type": "string",
+        "description": "Name of the city to get weather for"
+      },
+      "units": {
+        "type": "string",
+        "description": "Temperature units: 'celsius' or 'fahrenheit'",
+        "enum": ["celsius", "fahrenheit"]
+      }
+    },
+    "required": ["city"]
+  }
+}

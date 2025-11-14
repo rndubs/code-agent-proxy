@@ -1,0 +1,20 @@
+{
+  "name": "json_format",
+  "description": "Formats and validates JSON data with optional indentation",
+  "implementation_type": "script",
+  "script_path": "json_format.py",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "json_string": {
+        "type": "string",
+        "description": "JSON string to format"
+      },
+      "indent": {
+        "type": "integer",
+        "description": "Number of spaces for indentation (default: 2)"
+      }
+    },
+    "required": ["json_string"]
+  }
+}

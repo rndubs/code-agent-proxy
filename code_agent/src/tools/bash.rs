@@ -2,7 +2,6 @@ use super::{Tool, ToolParams, ToolResult};
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::process::Command;
-use std::time::Duration;
 
 /// Tool for executing bash commands
 pub struct BashTool;
